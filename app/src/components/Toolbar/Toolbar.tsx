@@ -15,11 +15,14 @@ interface Props {
   canUndo: boolean;
   canRedo: boolean;
   onOpenProjects: () => void;
+  onExportSuccess: (filename: string) => void;
+  onExportError: (msg: string) => void;
 }
 
 export default function Toolbar({
   canvasRef, currentDay, ratio, onRatioChange, onReset, onSave,
   onUndo, onRedo, canUndo, canRedo, onOpenProjects,
+  onExportSuccess, onExportError,
 }: Props) {
   const exportingRef = useRef(false);
 
@@ -28,9 +31,11 @@ export default function Toolbar({
     exportingRef.current = true;
     try {
       await exportPost(canvasRef.current, ratio, format, currentDay);
+      const day = String(currentDay).padStart(3, '0');
+      onExportSuccess(`un-kilometro-mas-dia-${day}.${format}`);
     } catch (e) {
       console.error('Error al exportar:', e);
-      alert('Error al exportar la imagen. Inténtalo de nuevo.');
+      onExportError('Error al exportar la imagen. Inténtalo de nuevo.');
     } finally {
       exportingRef.current = false;
     }

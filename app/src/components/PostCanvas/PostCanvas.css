@@ -31,6 +31,15 @@
   z-index: 200 !important;
 }
 
+/* Strip selection UI during PNG/JPEG export */
+.post-canvas.exporting .layer-selected {
+  outline: none !important;
+  z-index: unset !important;
+}
+.post-canvas.exporting * {
+  cursor: default !important;
+}
+
 /* ── Hero image wrapper (needed so transform applies to the whole block) ──── */
 .layer-hero-wrap {
   position: absolute;
@@ -393,6 +402,8 @@
   bottom: 130px;
   left: 44px;
   width: 520px;
+  max-height: 310px;
+  overflow: hidden;
   z-index: 10;
 }
 
@@ -419,6 +430,8 @@
   position: absolute;
   bottom: 50px;
   left: 44px;
+  max-width: 700px;
+  overflow: hidden;
   z-index: 10;
 }
 
@@ -429,6 +442,9 @@
   color: #FF6B1A;
   font-style: italic;
   letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Landscape decoration (bottom-right) ─────────────────────────────────── */

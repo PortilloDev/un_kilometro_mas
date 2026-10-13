@@ -40,6 +40,47 @@ const LAYER_NAMES: Record<string, string> = {
   landscape: 'Paisaje (fondo)',
 };
 
+function charCountClass(len: number, max: number): string {
+  if (len > max) return 'char-count over-limit';
+  if (len > max * 0.85) return 'char-count near-limit';
+  return 'char-count';
+}
+
+interface CharFieldProps {
+  label: string;
+  value: string;
+  max: number;
+  multiline?: boolean;
+  onChange: (v: string) => void;
+}
+
+function CharField({ label, value, max, multiline, onChange }: CharFieldProps) {
+  const over = value.length > max;
+  return (
+    <div className="field">
+      <div className="field-header">
+        <label>{label}</label>
+        <span className={charCountClass(value.length, max)}>{value.length}/{max}</span>
+      </div>
+      {multiline ? (
+        <textarea
+          className={over ? 'over-limit' : ''}
+          value={value}
+          rows={4}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : (
+        <input
+          type="text"
+          className={over ? 'over-limit' : ''}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function StatsPanel({
   state,
   selectedLayer,
@@ -398,44 +439,39 @@ export default function StatsPanel({
           <>
             <div className="panel-section">
               <div className="panel-section-title">Título del día</div>
-              <div className="field">
-                <label>Primera línea</label>
-                <input
-                  type="text"
-                  value={content.titleLine1}
-                  onChange={(e) => onUpdateContent('titleLine1', e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>Segunda línea</label>
-                <input
-                  type="text"
-                  value={content.titleLine2}
-                  onChange={(e) => onUpdateContent('titleLine2', e.target.value)}
-                />
-              </div>
+              <CharField
+                label="Primera línea"
+                value={content.titleLine1}
+                max={40}
+                onChange={(v) => onUpdateContent('titleLine1', v)}
+              />
+              <CharField
+                label="Segunda línea"
+                value={content.titleLine2}
+                max={40}
+                onChange={(v) => onUpdateContent('titleLine2', v)}
+              />
             </div>
 
             <div className="panel-section">
               <div className="panel-section-title">Descripción</div>
-              <div className="field">
-                <textarea
-                  value={content.description}
-                  onChange={(e) => onUpdateContent('description', e.target.value)}
-                  rows={4}
-                />
-              </div>
+              <CharField
+                label="Texto"
+                value={content.description}
+                max={300}
+                multiline
+                onChange={(v) => onUpdateContent('description', v)}
+              />
             </div>
 
             <div className="panel-section">
               <div className="panel-section-title">Frase de cierre</div>
-              <div className="field">
-                <input
-                  type="text"
-                  value={content.closingPhrase}
-                  onChange={(e) => onUpdateContent('closingPhrase', e.target.value)}
-                />
-              </div>
+              <CharField
+                label="Frase"
+                value={content.closingPhrase}
+                max={50}
+                onChange={(v) => onUpdateContent('closingPhrase', v)}
+              />
             </div>
           </>
         )}

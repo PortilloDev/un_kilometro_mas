@@ -297,3 +297,36 @@
   background: rgba(255,107,26,0.25);
   border-color: #FF6B1A;
 }
+
+/* ── Character counter ────────────────────────────────────────────────────── */
+.field-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.field-header label {
+  margin-bottom: 0;
+}
+
+.char-count {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.3px;
+}
+
+.char-count.near-limit {
+  color: #FF6B1A;
+}
+
+.char-count.over-limit {
+  color: #ff5555;
+  font-weight: 600;
+}
+
+.field input.over-limit,
+.field textarea.over-limit {
+  border-color: rgba(255, 85, 85, 0.6) !important;
+  background: rgba(255, 85, 85, 0.05) !important;
+}

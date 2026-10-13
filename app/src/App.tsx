@@ -6,6 +6,8 @@ import Toolbar from './components/Toolbar/Toolbar';
 import LayersPanel from './components/LayersPanel/LayersPanel';
 import StatsPanel from './components/StatsPanel/StatsPanel';
 import ProjectsDialog from './components/ProjectsDialog/ProjectsDialog';
+import Toast from './components/Toast/Toast';
+import type { ToastData } from './components/Toast/Toast';
 import './App.css';
 
 export default function App() {
@@ -15,6 +17,8 @@ export default function App() {
   const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
   const [canvasScale, setCanvasScale] = useState(0.5);
   const [showProjects, setShowProjects] = useState(false);
+  const [toast, setToast] = useState<ToastData | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Render counter forces undo/redo button states to recompute on each render
   const [, forceUpdate] = useState(0);
   const heroInputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +64,12 @@ export default function App() {
     if (viewportRef.current) ro.observe(viewportRef.current);
     return () => ro.disconnect();
   }, [CANVAS_H, CANVAS_W]);
+
+  function showToast(message: string, type: ToastData['type']) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+  }
 
   /* Keyboard shortcuts: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z redo, Cmd/Ctrl+S save */
   useEffect(() => {
@@ -130,6 +140,8 @@ export default function App() {
         canUndo={canUndo()}
         canRedo={canRedo()}
         onOpenProjects={() => setShowProjects(true)}
+        onExportSuccess={(f) => showToast(`Imagen exportada: ${f}`, 'success')}
+        onExportError={(msg) => showToast(msg, 'error')}
       />
 
       <div className="editor-body">
@@ -203,6 +215,8 @@ export default function App() {
           onClose={() => setShowProjects(false)}
         />
       )}
+
+      <Toast toast={toast} />
 
       {/* Hidden file inputs triggered from canvas placeholders */}
       <input

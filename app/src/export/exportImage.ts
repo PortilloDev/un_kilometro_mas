@@ -16,6 +16,9 @@ export async function exportPost(
 ): Promise<void> {
   const { width, height } = DIMENSIONS[ratio];
 
+  // Hide selection outline and cursor indicators during capture
+  canvasEl.classList.add('exporting');
+
   const options = {
     width,
     height,
@@ -32,15 +35,19 @@ export async function exportPost(
   const day = String(dayNumber).padStart(3, '0');
   const filename = `un-kilometro-mas-dia-${day}.${format}`;
 
-  let dataUrl: string;
-  if (format === 'jpeg') {
-    dataUrl = await toJpeg(canvasEl, { ...options, quality: 0.95 });
-  } else {
-    dataUrl = await toPng(canvasEl, options);
-  }
+  try {
+    let dataUrl: string;
+    if (format === 'jpeg') {
+      dataUrl = await toJpeg(canvasEl, { ...options, quality: 0.95 });
+    } else {
+      dataUrl = await toPng(canvasEl, options);
+    }
 
-  const link = document.createElement('a');
-  link.download = filename;
-  link.href = dataUrl;
-  link.click();
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+  } finally {
+    canvasEl.classList.remove('exporting');
+  }
 }
