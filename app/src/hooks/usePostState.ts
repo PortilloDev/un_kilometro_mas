@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { PostState, Layer } from '../model/types';
+import type { PostState, Layer, LayerId, ElementTransform } from '../model/types';
 import { DEFAULT_STATE, DEFAULT_LAYERS } from '../model/types';
 
 const STORAGE_KEY = 'ukm_post_state';
@@ -106,6 +106,22 @@ export function usePostState() {
     setLayersInternal(DEFAULT_LAYERS);
   }, []);
 
+  const updateTransform = useCallback(
+    (id: LayerId, t: ElementTransform) =>
+      setState((s) => ({ ...s, transforms: { ...s.transforms, [id]: t } })),
+    [setState],
+  );
+
+  const resetTransform = useCallback(
+    (id: LayerId) =>
+      setState((s) => {
+        const next = { ...s.transforms };
+        delete next[id];
+        return { ...s, transforms: next };
+      }),
+    [setState],
+  );
+
   const advanceDay = useCallback(() => {
     setState((s) => {
       const next = s.challenge.currentDay + 1;
@@ -127,6 +143,8 @@ export function usePostState() {
     moveLayer,
     resetToDefault,
     advanceDay,
+    updateTransform,
+    resetTransform,
     setState,
   };
 }

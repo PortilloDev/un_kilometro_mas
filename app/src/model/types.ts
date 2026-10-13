@@ -24,6 +24,12 @@ export interface PostContent {
   closingPhrase: string;
 }
 
+export interface ElementTransform {
+  x: number;
+  y: number;
+  opacity: number;
+}
+
 export interface PostState {
   challenge: ChallengeState;
   stats: TrainingStats;
@@ -33,6 +39,7 @@ export interface PostState {
   showCalories: boolean;
   showElevation: boolean;
   showTemperature: boolean;
+  transforms: Partial<Record<LayerId, ElementTransform>>;
 }
 
 export type LayerId =
@@ -93,4 +100,5 @@ export const DEFAULT_STATE: PostState = {
   showCalories: true,
   showElevation: false,
   showTemperature: true,
+  transforms: {},
 };

@@ -1,28 +1,93 @@
-import { forwardRef, useRef } from 'react';
-import type { PostState, Layer } from '../../model/types';
+import { forwardRef } from 'react';
+import type { PostState, Layer, LayerId, ElementTransform } from '../../model/types';
 import './PostCanvas.css';
 
 interface Props {
   state: PostState;
   layers: Layer[];
+  selectedLayer: string | null;
+  canvasScale: number;
   onHeroClick: () => void;
   onMapClick: () => void;
+  onSelectLayer: (id: LayerId | null) => void;
+  onTransformChange: (id: LayerId, t: ElementTransform) => void;
 }
 
-function isVisible(layers: Layer[], id: string): boolean {
-  const l = layers.find((x) => x.id === id);
-  return l ? l.visible : true;
+function getLayer(layers: Layer[], id: string) {
+  return layers.find((x) => x.id === id);
 }
 
 const PostCanvas = forwardRef<HTMLDivElement, Props>(
-  ({ state, layers, onHeroClick, onMapClick }, ref) => {
+  ({ state, layers, selectedLayer, canvasScale, onHeroClick, onMapClick, onSelectLayer, onTransformChange }, ref) => {
     const { challenge, stats, content } = state;
 
+    /* ── Helpers ──────────────────────────────────────────────────────── */
+
+    function isVisible(id: string): boolean {
+      return getLayer(layers, id)?.visible ?? true;
+    }
+
+    function isLocked(id: LayerId): boolean {
+      return getLayer(layers, id)?.locked ?? false;
+    }
+
+    function layerStyle(id: LayerId): React.CSSProperties {
+      const t = state.transforms[id];
+      return {
+        transform: t ? `translate(${t.x}px, ${t.y}px)` : undefined,
+        opacity: t?.opacity ?? 1,
+        cursor: isLocked(id) ? 'default' : 'move',
+        userSelect: 'none',
+      };
+    }
+
+    function sel(id: LayerId, base: string): string {
+      return `${base}${selectedLayer === id ? ' layer-selected' : ''}`;
+    }
+
+    function handlePointerDown(e: React.PointerEvent, id: LayerId) {
+      if (isLocked(id)) return;
+      e.stopPropagation();
+      onSelectLayer(id);
+
+      const startClientX = e.clientX;
+      const startClientY = e.clientY;
+      const startT = state.transforms[id] ?? { x: 0, y: 0, opacity: 1 };
+      let moved = false;
+
+      function onMove(me: PointerEvent) {
+        const dx = (me.clientX - startClientX) / canvasScale;
+        const dy = (me.clientY - startClientY) / canvasScale;
+        if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+        moved = true;
+        onTransformChange(id, { ...startT, x: startT.x + dx, y: startT.y + dy });
+      }
+
+      function onUp() {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      }
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    }
+
+    /* ── Canvas ───────────────────────────────────────────────────────── */
+
     return (
-      <div className="post-canvas" ref={ref}>
+      <div
+        className="post-canvas"
+        ref={ref}
+        onClick={() => onSelectLayer(null)}
+      >
         {/* ── Hero image ──────────────────────────────────────────────── */}
-        {isVisible(layers, 'hero-image') && (
-          <>
+        {isVisible('hero-image') && (
+          <div
+            className={sel('hero-image', 'layer-hero-wrap')}
+            style={layerStyle('hero-image')}
+            onPointerDown={(e) => handlePointerDown(e, 'hero-image')}
+            onClick={(e) => e.stopPropagation()}
+          >
             {state.heroImage ? (
               <img
                 className="layer-hero-image"
@@ -42,12 +107,17 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
             )}
             <div className="hero-gradient-overlay" />
             <div className="hero-bottom-overlay" />
-          </>
+          </div>
         )}
 
         {/* ── Logo ────────────────────────────────────────────────────── */}
-        {isVisible(layers, 'logo') && (
-          <div className="layer-logo">
+        {isVisible('logo') && (
+          <div
+            className={sel('logo', 'layer-logo')}
+            style={layerStyle('logo')}
+            onPointerDown={(e) => handlePointerDown(e, 'logo')}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="logo-text">
               <span className="logo-un">UN</span>
               <span className="logo-kilometro">KILÓMETRO</span>
@@ -62,8 +132,13 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
         )}
 
         {/* ── RETO title ──────────────────────────────────────────────── */}
-        {isVisible(layers, 'reto-title') && (
-          <div className="layer-reto-title">
+        {isVisible('reto-title') && (
+          <div
+            className={sel('reto-title', 'layer-reto-title')}
+            style={layerStyle('reto-title')}
+            onPointerDown={(e) => handlePointerDown(e, 'reto-title')}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="reto-label">RETO</div>
             <div className="reto-number">
               <span className="current-day">{challenge.currentDay}</span>
@@ -74,14 +149,17 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
         )}
 
         {/* ── Stats card ──────────────────────────────────────────────── */}
-        {isVisible(layers, 'stats-card') && (
-          <div className="layer-stats-card">
+        {isVisible('stats-card') && (
+          <div
+            className={sel('stats-card', 'layer-stats-card')}
+            style={layerStyle('stats-card')}
+            onPointerDown={(e) => handlePointerDown(e, 'stats-card')}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="stats-card-header">
               <div className="stats-header-left">
                 <span className="stats-run-icon">🏃</span>
-                <span className="stats-datetime">
-                  {stats.date} · {stats.time}
-                </span>
+                <span className="stats-datetime">{stats.date} · {stats.time}</span>
               </div>
               {state.showTemperature && stats.temperature && (
                 <div className="stats-weather">
@@ -94,15 +172,8 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
             <div className="stats-map-area">
               {state.mapImage ? (
                 <>
-                  <img
-                    className="stats-map-img"
-                    src={state.mapImage}
-                    alt="Mapa del recorrido"
-                    draggable={false}
-                  />
-                  {stats.location && (
-                    <span className="stats-location">{stats.location}</span>
-                  )}
+                  <img className="stats-map-img" src={state.mapImage} alt="Mapa del recorrido" draggable={false} />
+                  {stats.location && <span className="stats-location">{stats.location}</span>}
                 </>
               ) : (
                 <div className="stats-map-placeholder" onClick={onMapClick}>
@@ -168,8 +239,13 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
         )}
 
         {/* ── Landscape decoration ────────────────────────────────────── */}
-        {isVisible(layers, 'landscape') && (
-          <div className="layer-landscape">
+        {isVisible('landscape') && (
+          <div
+            className={sel('landscape', 'layer-landscape')}
+            style={layerStyle('landscape')}
+            onPointerDown={(e) => handlePointerDown(e, 'landscape')}
+            onClick={(e) => e.stopPropagation()}
+          >
             <svg className="landscape-svg" viewBox="0 0 540 200" preserveAspectRatio="xMidYMax meet">
               <defs>
                 <linearGradient id="sunGlow" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -177,15 +253,12 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
                   <stop offset="100%" stopColor="#FF6B1A" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              {/* Sun glow */}
               <ellipse cx="420" cy="200" rx="120" ry="80" fill="url(#sunGlow)" />
               <circle cx="420" cy="180" r="28" fill="#FF6B1A" opacity="0.9" />
-              {/* Mountains */}
               <polygon points="0,200 80,80 160,200" fill="#1a1a1a" />
               <polygon points="60,200 160,50 260,200" fill="#222" />
               <polygon points="160,200 280,70 400,200" fill="#1a1a1a" />
               <polygon points="300,200 400,100 540,200" fill="#222" />
-              {/* Road */}
               <polygon points="220,200 240,130 300,130 320,200" fill="#111" opacity="0.8" />
               <line x1="260" y1="130" x2="260" y2="200" stroke="#FF6B1A" strokeWidth="2" opacity="0.5" strokeDasharray="8,8" />
             </svg>
@@ -193,8 +266,13 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
         )}
 
         {/* ── DÍA title ───────────────────────────────────────────────── */}
-        {isVisible(layers, 'day-title') && (
-          <div className="layer-day-title">
+        {isVisible('day-title') && (
+          <div
+            className={sel('day-title', 'layer-day-title')}
+            style={layerStyle('day-title')}
+            onPointerDown={(e) => handlePointerDown(e, 'day-title')}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="dia-label">DÍA</div>
             <div className="dia-number">
               <span className="current-day">{challenge.currentDay}</span>
@@ -204,8 +282,13 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
         )}
 
         {/* ── Day text ────────────────────────────────────────────────── */}
-        {isVisible(layers, 'day-text') && (
-          <div className="layer-day-text">
+        {isVisible('day-text') && (
+          <div
+            className={sel('day-text', 'layer-day-text')}
+            style={layerStyle('day-text')}
+            onPointerDown={(e) => handlePointerDown(e, 'day-text')}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="day-title-text">
               {content.titleLine1}
               {content.titleLine2 && <><br />{content.titleLine2}</>}
@@ -215,8 +298,13 @@ const PostCanvas = forwardRef<HTMLDivElement, Props>(
         )}
 
         {/* ── Closing phrase ──────────────────────────────────────────── */}
-        {isVisible(layers, 'closing-phrase') && (
-          <div className="layer-closing-phrase">
+        {isVisible('closing-phrase') && (
+          <div
+            className={sel('closing-phrase', 'layer-closing-phrase')}
+            style={layerStyle('closing-phrase')}
+            onPointerDown={(e) => handlePointerDown(e, 'closing-phrase')}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="closing-text">{content.closingPhrase}</div>
           </div>
         )}

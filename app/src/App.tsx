@@ -29,6 +29,8 @@ export default function App() {
     moveLayer,
     resetToDefault,
     advanceDay,
+    updateTransform,
+    resetTransform,
     setState,
   } = usePostState();
 
@@ -124,8 +126,12 @@ export default function App() {
                 ref={canvasRef}
                 state={state}
                 layers={layers}
+                selectedLayer={selectedLayer}
+                canvasScale={canvasScale}
                 onHeroClick={() => heroInputRef.current?.click()}
                 onMapClick={() => mapInputRef.current?.click()}
+                onSelectLayer={setSelectedLayer}
+                onTransformChange={updateTransform}
               />
             </div>
           </div>
@@ -133,6 +139,7 @@ export default function App() {
 
         <StatsPanel
           state={state}
+          selectedLayer={selectedLayer}
           onUpdateStats={updateStats}
           onUpdateChallenge={updateChallenge}
           onUpdateContent={updateContent}
@@ -142,6 +149,8 @@ export default function App() {
           onToggleElevation={toggleElevation}
           onToggleTemperature={toggleTemperature}
           onAdvanceDay={advanceDay}
+          onUpdateTransform={updateTransform}
+          onResetTransform={resetTransform}
         />
       </div>
 

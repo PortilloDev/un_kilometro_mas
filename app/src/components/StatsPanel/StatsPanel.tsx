@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
-import type { PostState } from '../../model/types';
+import { useRef, useState, useEffect } from 'react';
+import type { PostState, LayerId, ElementTransform } from '../../model/types';
 import './StatsPanel.css';
 
 interface Props {
   state: PostState;
+  selectedLayer: string | null;
   onUpdateStats: (field: string, value: string) => void;
   onUpdateChallenge: (field: string, value: string | number) => void;
   onUpdateContent: (field: string, value: string) => void;
@@ -13,9 +14,11 @@ interface Props {
   onToggleElevation: () => void;
   onToggleTemperature: () => void;
   onAdvanceDay: () => void;
+  onUpdateTransform: (id: LayerId, t: ElementTransform) => void;
+  onResetTransform: (id: LayerId) => void;
 }
 
-type Tab = 'reto' | 'estadisticas' | 'texto' | 'imagenes';
+type Tab = 'propiedades' | 'reto' | 'estadisticas' | 'texto' | 'imagenes';
 
 function readFileAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -26,8 +29,20 @@ function readFileAsDataURL(file: File): Promise<string> {
   });
 }
 
+const LAYER_NAMES: Record<string, string> = {
+  'hero-image': 'Fotografía principal',
+  logo: 'Logotipo',
+  'reto-title': 'Título del reto',
+  'stats-card': 'Tarjeta de estadísticas',
+  'day-title': 'DÍA X/100',
+  'day-text': 'Texto del día',
+  'closing-phrase': 'Frase de cierre',
+  landscape: 'Paisaje (fondo)',
+};
+
 export default function StatsPanel({
   state,
+  selectedLayer,
   onUpdateStats,
   onUpdateChallenge,
   onUpdateContent,
@@ -37,10 +52,17 @@ export default function StatsPanel({
   onToggleElevation,
   onToggleTemperature,
   onAdvanceDay,
+  onUpdateTransform,
+  onResetTransform,
 }: Props) {
   const [tab, setTab] = useState<Tab>('reto');
   const heroInputRef = useRef<HTMLInputElement>(null);
   const mapInputRef = useRef<HTMLInputElement>(null);
+
+  /* Auto-switch to Propiedades when a layer is selected on canvas */
+  useEffect(() => {
+    if (selectedLayer) setTab('propiedades');
+  }, [selectedLayer]);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, type: 'hero' | 'map') {
     const file = e.target.files?.[0];
@@ -53,9 +75,18 @@ export default function StatsPanel({
 
   const { challenge, stats, content } = state;
 
+  const activeTransform = selectedLayer ? (state.transforms[selectedLayer as LayerId] ?? { x: 0, y: 0, opacity: 1 }) : null;
+
   return (
     <div className="stats-panel">
       <div className="panel-tabs">
+        <button
+          className={`panel-tab${tab === 'propiedades' ? ' active' : ''}${selectedLayer ? ' tab-has-selection' : ''}`}
+          onClick={() => setTab('propiedades')}
+          title="Propiedades del elemento seleccionado"
+        >
+          {selectedLayer ? '✦ Props' : 'Props'}
+        </button>
         <button className={`panel-tab${tab === 'reto' ? ' active' : ''}`} onClick={() => setTab('reto')}>Reto</button>
         <button className={`panel-tab${tab === 'estadisticas' ? ' active' : ''}`} onClick={() => setTab('estadisticas')}>Stats</button>
         <button className={`panel-tab${tab === 'texto' ? ' active' : ''}`} onClick={() => setTab('texto')}>Texto</button>
@@ -63,6 +94,96 @@ export default function StatsPanel({
       </div>
 
       <div className="panel-scroll">
+
+        {/* ── PROPIEDADES tab ───────────────────────────────────────── */}
+        {tab === 'propiedades' && (
+          <>
+            {!selectedLayer ? (
+              <div className="props-empty">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                <p>Haz clic sobre cualquier elemento del lienzo para seleccionarlo y editar sus propiedades.</p>
+              </div>
+            ) : (
+              <>
+                <div className="panel-section">
+                  <div className="panel-section-title">
+                    {LAYER_NAMES[selectedLayer] ?? selectedLayer}
+                  </div>
+
+                  <div className="field-row">
+                    <div className="field">
+                      <label>Desplazamiento X</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={Math.round(activeTransform!.x)}
+                        onChange={(e) =>
+                          onUpdateTransform(selectedLayer as LayerId, {
+                            ...activeTransform!,
+                            x: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Desplazamiento Y</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={Math.round(activeTransform!.y)}
+                        onChange={(e) =>
+                          onUpdateTransform(selectedLayer as LayerId, {
+                            ...activeTransform!,
+                            y: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="panel-section">
+                  <div className="panel-section-title">Opacidad</div>
+                  <div className="opacity-row">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={activeTransform!.opacity}
+                      className="opacity-slider"
+                      onChange={(e) =>
+                        onUpdateTransform(selectedLayer as LayerId, {
+                          ...activeTransform!,
+                          opacity: Number(e.target.value),
+                        })
+                      }
+                    />
+                    <span className="opacity-value">
+                      {Math.round(activeTransform!.opacity * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="panel-section">
+                  <button
+                    className="image-upload-btn"
+                    onClick={() => onResetTransform(selectedLayer as LayerId)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="1 4 1 10 7 10" />
+                      <path d="M3.51 15a9 9 0 1 0 .49-4.87L1 10" />
+                    </svg>
+                    Restablecer posición y opacidad
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
 
         {/* ── RETO tab ──────────────────────────────────────────────── */}
         {tab === 'reto' && (
