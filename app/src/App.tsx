@@ -5,6 +5,7 @@ import PostCanvas from './components/PostCanvas/PostCanvas';
 import Toolbar from './components/Toolbar/Toolbar';
 import LayersPanel from './components/LayersPanel/LayersPanel';
 import StatsPanel from './components/StatsPanel/StatsPanel';
+import ProjectsDialog from './components/ProjectsDialog/ProjectsDialog';
 import './App.css';
 
 export default function App() {
@@ -13,6 +14,9 @@ export default function App() {
   const [ratio, setRatio] = useState<ExportRatio>('4:5');
   const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
   const [canvasScale, setCanvasScale] = useState(0.5);
+  const [showProjects, setShowProjects] = useState(false);
+  // Render counter forces undo/redo button states to recompute on each render
+  const [, forceUpdate] = useState(0);
   const heroInputRef = useRef<HTMLInputElement>(null);
   const mapInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,6 +36,11 @@ export default function App() {
     updateTransform,
     resetTransform,
     setState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    loadSnapshot,
   } = usePostState();
 
   const CANVAS_W = 1080;
@@ -52,6 +61,28 @@ export default function App() {
     return () => ro.disconnect();
   }, [CANVAS_H, CANVAS_W]);
 
+  /* Keyboard shortcuts: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z redo, Cmd/Ctrl+S save */
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        forceUpdate((n) => n + 1);
+      } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
+        e.preventDefault();
+        redo();
+        forceUpdate((n) => n + 1);
+      } else if (e.key === 's') {
+        e.preventDefault();
+        setShowProjects(true);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undo, redo]);
+
   const toggleCalories = useCallback(
     () => setState((s) => ({ ...s, showCalories: !s.showCalories })),
     [setState],
@@ -68,13 +99,18 @@ export default function App() {
   function handleReset() {
     if (confirm('¿Restablecer la plantilla a los valores iniciales? Se perderán los cambios no guardados.')) {
       resetToDefault();
+      forceUpdate((n) => n + 1);
     }
   }
 
-  function handleSave() {
-    /* State is already persisted to localStorage in real-time via usePostState */
-    const btn = document.activeElement as HTMLElement;
-    btn?.blur();
+  function handleUndo() {
+    undo();
+    forceUpdate((n) => n + 1);
+  }
+
+  function handleRedo() {
+    redo();
+    forceUpdate((n) => n + 1);
   }
 
   const scaledW = Math.round(CANVAS_W * canvasScale);
@@ -88,7 +124,12 @@ export default function App() {
         ratio={ratio}
         onRatioChange={setRatio}
         onReset={handleReset}
-        onSave={handleSave}
+        onSave={() => setShowProjects(true)}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo()}
+        canRedo={canRedo()}
+        onOpenProjects={() => setShowProjects(true)}
       />
 
       <div className="editor-body">
@@ -153,6 +194,15 @@ export default function App() {
           onResetTransform={resetTransform}
         />
       </div>
+
+      {showProjects && (
+        <ProjectsDialog
+          currentState={state}
+          currentLayers={layers}
+          onLoad={(s, ls) => { loadSnapshot(s, ls); forceUpdate((n) => n + 1); }}
+          onClose={() => setShowProjects(false)}
+        />
+      )}
 
       {/* Hidden file inputs triggered from canvas placeholders */}
       <input

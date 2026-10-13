@@ -1,9 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { PostState, Layer, LayerId, ElementTransform } from '../model/types';
 import { DEFAULT_STATE, DEFAULT_LAYERS } from '../model/types';
 
 const STORAGE_KEY = 'ukm_post_state';
 const LAYERS_KEY = 'ukm_layers';
+const HISTORY_MAX = 50;
+const HISTORY_DEBOUNCE = 800;
 
 function loadState(): PostState {
   try {
@@ -21,24 +23,99 @@ function loadLayers(): Layer[] {
   return DEFAULT_LAYERS;
 }
 
+interface HistoryEntry { state: PostState; layers: Layer[] }
+
 export function usePostState() {
   const [state, setStateInternal] = useState<PostState>(loadState);
   const [layers, setLayersInternal] = useState<Layer[]>(loadLayers);
 
+  const stateRef = useRef(state);
+  const layersRef = useRef(layers);
+  const historyRef = useRef<HistoryEntry[]>([{ state: loadState(), layers: loadLayers() }]);
+  const historyIdxRef = useRef(0);
+  const isRestoringRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function scheduleSnapshot() {
+    if (isRestoringRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const entry: HistoryEntry = { state: stateRef.current, layers: layersRef.current };
+      const trimmed = historyRef.current.slice(0, historyIdxRef.current + 1);
+      trimmed.push(entry);
+      if (trimmed.length > HISTORY_MAX) trimmed.shift();
+      historyRef.current = trimmed;
+      historyIdxRef.current = trimmed.length - 1;
+    }, HISTORY_DEBOUNCE);
+  }
+
   const setState = useCallback((updater: (prev: PostState) => PostState) => {
     setStateInternal((prev) => {
       const next = updater(prev);
+      stateRef.current = next;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      scheduleSnapshot();
       return next;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setLayers = useCallback((updater: (prev: Layer[]) => Layer[]) => {
     setLayersInternal((prev) => {
       const next = updater(prev);
+      layersRef.current = next;
       localStorage.setItem(LAYERS_KEY, JSON.stringify(next));
+      scheduleSnapshot();
       return next;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const undo = useCallback(() => {
+    if (historyIdxRef.current <= 0) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    isRestoringRef.current = true;
+    historyIdxRef.current--;
+    const entry = historyRef.current[historyIdxRef.current];
+    stateRef.current = entry.state;
+    layersRef.current = entry.layers;
+    setStateInternal(entry.state);
+    setLayersInternal(entry.layers);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entry.state));
+    localStorage.setItem(LAYERS_KEY, JSON.stringify(entry.layers));
+    setTimeout(() => { isRestoringRef.current = false; }, 50);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (historyIdxRef.current >= historyRef.current.length - 1) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    isRestoringRef.current = true;
+    historyIdxRef.current++;
+    const entry = historyRef.current[historyIdxRef.current];
+    stateRef.current = entry.state;
+    layersRef.current = entry.layers;
+    setStateInternal(entry.state);
+    setLayersInternal(entry.layers);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entry.state));
+    localStorage.setItem(LAYERS_KEY, JSON.stringify(entry.layers));
+    setTimeout(() => { isRestoringRef.current = false; }, 50);
+  }, []);
+
+  const canUndo = useCallback(() => historyIdxRef.current > 0, []);
+  const canRedo = useCallback(() => historyIdxRef.current < historyRef.current.length - 1, []);
+
+  const loadSnapshot = useCallback((s: PostState, ls: Layer[]) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    isRestoringRef.current = true;
+    stateRef.current = s;
+    layersRef.current = ls;
+    setStateInternal(s);
+    setLayersInternal(ls);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    localStorage.setItem(LAYERS_KEY, JSON.stringify(ls));
+    historyRef.current = [{ state: s, layers: ls }];
+    historyIdxRef.current = 0;
+    setTimeout(() => { isRestoringRef.current = false; }, 50);
   }, []);
 
   const updateStats = useCallback(
@@ -102,8 +179,12 @@ export function usePostState() {
   const resetToDefault = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LAYERS_KEY);
+    stateRef.current = DEFAULT_STATE;
+    layersRef.current = DEFAULT_LAYERS;
     setStateInternal(DEFAULT_STATE);
     setLayersInternal(DEFAULT_LAYERS);
+    historyRef.current = [{ state: DEFAULT_STATE, layers: DEFAULT_LAYERS }];
+    historyIdxRef.current = 0;
   }, []);
 
   const updateTransform = useCallback(
@@ -146,5 +227,10 @@ export function usePostState() {
     updateTransform,
     resetTransform,
     setState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    loadSnapshot,
   };
 }

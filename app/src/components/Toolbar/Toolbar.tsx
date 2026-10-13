@@ -10,9 +10,17 @@ interface Props {
   onRatioChange: (r: ExportRatio) => void;
   onReset: () => void;
   onSave: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onOpenProjects: () => void;
 }
 
-export default function Toolbar({ canvasRef, currentDay, ratio, onRatioChange, onReset, onSave }: Props) {
+export default function Toolbar({
+  canvasRef, currentDay, ratio, onRatioChange, onReset, onSave,
+  onUndo, onRedo, canUndo, canRedo, onOpenProjects,
+}: Props) {
   const exportingRef = useRef(false);
 
   async function handleExport(format: ExportFormat) {
@@ -37,7 +45,40 @@ export default function Toolbar({ canvasRef, currentDay, ratio, onRatioChange, o
 
       <div className="toolbar-divider" />
 
-      <button className="toolbar-btn" onClick={onSave} title="Guardar cambios">
+      {/* Undo / Redo */}
+      <button
+        className="toolbar-btn icon-only"
+        onClick={onUndo}
+        disabled={!canUndo}
+        title="Deshacer (Cmd+Z)"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="9 14 4 9 9 4" />
+          <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+        </svg>
+      </button>
+      <button
+        className="toolbar-btn icon-only"
+        onClick={onRedo}
+        disabled={!canRedo}
+        title="Rehacer (Cmd+Shift+Z)"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="15 14 20 9 15 4" />
+          <path d="M4 20v-7a4 4 0 0 1 4-4h12" />
+        </svg>
+      </button>
+
+      <div className="toolbar-divider" />
+
+      <button className="toolbar-btn" onClick={onOpenProjects} title="Proyectos guardados">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+        Proyectos
+      </button>
+
+      <button className="toolbar-btn" onClick={onSave} title="Guardar cambios (Cmd+S)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
           <polyline points="17 21 17 13 7 13 7 21" />

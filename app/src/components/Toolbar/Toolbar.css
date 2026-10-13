@@ -104,3 +104,14 @@
 .toolbar-spacer {
   flex: 1;
 }
+
+.toolbar-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.toolbar-btn.icon-only {
+  padding: 7px 9px;
+  gap: 0;
+}
