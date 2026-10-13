@@ -1,0 +1,106 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #141414;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.toolbar-brand {
+  display: flex;
+  flex-direction: column;
+  margin-right: 8px;
+}
+
+.toolbar-brand-name {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #FF6B1A;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.toolbar-brand-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.5px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.1);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.toolbar-btn.primary {
+  background: #FF6B1A;
+  border-color: #FF6B1A;
+  color: #fff;
+  font-weight: 600;
+}
+
+.toolbar-btn.primary:hover {
+  background: #ff7d35;
+  border-color: #ff7d35;
+}
+
+.toolbar-btn.danger:hover {
+  background: rgba(220, 50, 50, 0.15);
+  border-color: rgba(220, 50, 50, 0.4);
+  color: #ff6b6b;
+}
+
+.toolbar-btn svg {
+  flex-shrink: 0;
+}
+
+.toolbar-select {
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toolbar-select:focus {
+  outline: none;
+  border-color: #FF6B1A;
+}
+
+.toolbar-select option {
+  background: #1a1a1a;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}

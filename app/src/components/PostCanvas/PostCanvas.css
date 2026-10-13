@@ -1,0 +1,432 @@
+/* ── Wrapper: scales the 1080×1350 canvas to fit the editor ──────────────── */
+.canvas-viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  overflow: hidden;
+  background: #111;
+  padding: 16px;
+}
+
+.canvas-scale-wrapper {
+  transform-origin: top left;
+  /* set via inline style: scale(factor) */
+}
+
+/* ── The actual post (1080×1350, never changes) ───────────────────────────── */
+.post-canvas {
+  position: relative;
+  width: 1080px;
+  height: 1350px;
+  background-color: #0D0D0D;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Hero image (left half) ───────────────────────────────────────────────── */
+.layer-hero-image {
+  position: absolute;
+  inset: 0;
+  width: 600px;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.layer-hero-placeholder {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 600px;
+  height: 100%;
+  background: linear-gradient(160deg, #1a1a1a 0%, #2a1a0a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.layer-hero-placeholder span {
+  color: rgba(255,255,255,0.4);
+  font-size: 28px;
+  font-family: 'Inter', sans-serif;
+}
+
+.layer-hero-placeholder svg {
+  opacity: 0.3;
+}
+
+/* Gradient to blend hero into dark right side */
+.hero-gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 350px;
+  width: 350px;
+  height: 100%;
+  background: linear-gradient(to right, transparent 0%, rgba(13,13,13,0.6) 60%, #0D0D0D 100%);
+  pointer-events: none;
+}
+
+/* Bottom gradient on left for text legibility */
+.hero-bottom-overlay {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 620px;
+  height: 520px;
+  background: linear-gradient(to top, rgba(13,13,13,0.97) 0%, rgba(13,13,13,0.7) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Logo (top-left) ──────────────────────────────────────────────────────── */
+.layer-logo {
+  position: absolute;
+  top: 50px;
+  left: 48px;
+  z-index: 10;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.logo-un {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 36px;
+  color: #fff;
+  font-style: italic;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.logo-kilometro {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 58px;
+  color: #fff;
+  font-style: italic;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  line-height: 0.9;
+}
+
+.logo-mas-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 2px;
+}
+
+.logo-mas {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 58px;
+  color: #fff;
+  font-style: italic;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  line-height: 0.9;
+}
+
+.logo-orange-line {
+  height: 8px;
+  width: 100%;
+  background-color: #FF6B1A;
+  margin-top: -6px;
+}
+
+/* ── RETO title (top-right) ───────────────────────────────────────────────── */
+.layer-reto-title {
+  position: absolute;
+  top: 55px;
+  right: 45px;
+  text-align: right;
+  z-index: 10;
+}
+
+.reto-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 38px;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.reto-number {
+  font-family: 'Bebas Neue', 'Oswald', sans-serif;
+  font-size: 168px;
+  line-height: 0.85;
+  color: #fff;
+  letter-spacing: -4px;
+}
+
+.reto-number .current-day {
+  color: #FF6B1A;
+}
+
+.reto-total {
+  font-family: 'Bebas Neue', 'Oswald', sans-serif;
+  font-size: 100px;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: -2px;
+}
+
+.reto-goal {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 32px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  margin-top: -8px;
+}
+
+/* ── Stats card ───────────────────────────────────────────────────────────── */
+.layer-stats-card {
+  position: absolute;
+  top: 285px;
+  right: 30px;
+  width: 490px;
+  background: #1C1C1E;
+  border-radius: 20px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.stats-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.stats-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stats-run-icon {
+  font-size: 22px;
+}
+
+.stats-datetime {
+  font-family: 'Inter', sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.5px;
+}
+
+.stats-weather {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.8);
+}
+
+.stats-map-area {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  background: #111;
+}
+
+.stats-map-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stats-map-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #141414 0%, #1a2a1a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.stats-map-placeholder span {
+  color: rgba(255,255,255,0.35);
+  font-size: 20px;
+}
+
+.stats-location {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0,0,0,0.6);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.stats-grid {
+  padding: 14px 20px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.stats-row {
+  display: contents;
+}
+
+.stat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.stat-item:nth-last-child(-n+2) {
+  border-bottom: none;
+}
+
+.stat-icon {
+  font-size: 26px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-value {
+  font-family: 'Oswald', sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1;
+}
+
+.stat-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-item.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ── Day title (bottom-left) ──────────────────────────────────────────────── */
+.layer-day-title {
+  position: absolute;
+  bottom: 390px;
+  left: 44px;
+  z-index: 10;
+}
+
+.dia-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 28px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+}
+
+.dia-number {
+  font-family: 'Bebas Neue', 'Oswald', sans-serif;
+  font-size: 130px;
+  line-height: 0.9;
+  color: #fff;
+  letter-spacing: -2px;
+}
+
+.dia-number .current-day {
+  color: #FF6B1A;
+}
+
+.dia-total {
+  font-size: 80px;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: -1px;
+}
+
+/* ── Day text / description ───────────────────────────────────────────────── */
+.layer-day-text {
+  position: absolute;
+  bottom: 130px;
+  left: 44px;
+  width: 520px;
+  z-index: 10;
+}
+
+.day-title-text {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 34px;
+  color: #fff;
+  line-height: 1.25;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.day-description {
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.5;
+}
+
+/* ── Closing phrase ───────────────────────────────────────────────────────── */
+.layer-closing-phrase {
+  position: absolute;
+  bottom: 50px;
+  left: 44px;
+  z-index: 10;
+}
+
+.closing-text {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 38px;
+  color: #FF6B1A;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+/* ── Landscape decoration (bottom-right) ─────────────────────────────────── */
+.layer-landscape {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 540px;
+  height: 200px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.landscape-svg {
+  width: 100%;
+  height: 100%;
+}
